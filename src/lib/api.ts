@@ -17,15 +17,21 @@ class ApiService {
 
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     if (!response.ok) {
-      const errorText = await response.text();
-      return { error: errorText || `HTTP error! status: ${response.status}` };
+      try {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        return { error: errorText || `HTTP error! status: ${response.status}` };
+      } catch (e) {
+        return { error: `HTTP error! status: ${response.status}` };
+      }
     }
 
     try {
       const data = await response.json();
       return { data };
     } catch (error) {
-      return { data: null as T };
+      // If response is successful but no JSON content (like 204 No Content)
+      return { data: {} as T };
     }
   }
 

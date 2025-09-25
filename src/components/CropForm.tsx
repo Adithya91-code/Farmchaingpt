@@ -41,9 +41,10 @@ const CropForm: React.FC<CropFormProps> = ({ crop, onClose, onSave }) => {
       
       // If a file was selected, convert to base64 for local storage
       if (imageFile) {
-        const reader = new FileReader();
-        finalImageUrl = await new Promise((resolve) => {
+        finalImageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
           reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = (e) => reject(new Error('Failed to read image file'));
           reader.readAsDataURL(imageFile);
         });
       }
@@ -57,7 +58,7 @@ const CropForm: React.FC<CropFormProps> = ({ crop, onClose, onSave }) => {
       }
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An error occurred while saving the crop');
     } finally {
       setLoading(false);
     }

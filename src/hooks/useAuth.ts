@@ -26,13 +26,6 @@ export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for existing user session
-    const currentUser = storage.getCurrentUser();
-    setUser(currentUser);
-    setLoading(false);
-  }, []);
-
   const signIn = async (email: string, password: string) => {
     const result = await apiService.signIn(email, password);
     
@@ -44,7 +37,7 @@ export const useAuthProvider = () => {
       const userSession: User = {
         id: result.data.id.toString(),
         email: result.data.email,
-        role: result.data.role.toLowerCase(),
+        role: result.data.role.toLowerCase() as UserRole,
         created_at: new Date().toISOString(),
         farmer_id: result.data.farmerId,
         distributor_id: result.data.distributorId,
@@ -65,7 +58,7 @@ export const useAuthProvider = () => {
       password,
       name,
       location,
-      role
+      role: role.toUpperCase()
     });
     
     if (result.error) {

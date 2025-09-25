@@ -13,6 +13,7 @@ import AIAnalysisTool from './AIAnalysisTool';
 const Dashboard: React.FC = () => {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -228,7 +229,8 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
 
       if (result.error) {
         console.error('Error creating crop:', result.error);
-        alert('Error creating crop: ' + result.error);
+        // Show a more user-friendly error message
+        setError('Failed to add crop. Please check your connection and try again.');
       } else {
         console.log('Crop created successfully:', result.data);
         // Reload crops to show the new one
@@ -236,7 +238,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
       }
     } catch (error) {
       console.error('Network error creating crop:', error);
-      alert('Network error creating crop. Please check your connection.');
+      setError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -322,12 +324,31 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
 
   return (
     <div className="space-y-6">
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+          <button
+            onClick={() => setError('')}
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+          >
+            <span className="sr-only">Dismiss</span>
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg border border-orange-200 p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Crop Management</h1>
-            <p className="text-gray-600">Manage your crops and track your harvest</p>
+            <p className="text-gray-600">
+              {user?.role === 'farmer' ? 'Add and manage your crops' : 
+               user?.role === 'distributor' ? 'Manage crops from farmers' :
+               user?.role === 'retailer' ? 'Manage crops from distributors' :
+               'View and manage crops'}
+            </p>
           </div>
           <div className="flex space-x-3">
             <button

@@ -40,6 +40,16 @@ const Register: React.FC = () => {
       return;
     }
 
+    if (!name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+
+    if (!location.trim()) {
+      setError('Please enter your location');
+      return;
+    }
+
     setLoading(true);
 
     try {

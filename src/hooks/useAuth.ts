@@ -27,13 +27,16 @@ export const useAuthProvider = () => {
   const [loading, setLoading] = useState(true);
 
   const signIn = async (email: string, password: string) => {
+    console.log('Attempting to sign in with:', email);
     const result = await apiService.signIn(email, password);
     
     if (result.error) {
+      console.error('Sign in error:', result.error);
       throw new Error(result.error);
     }
 
     if (result.data) {
+      console.log('Sign in successful, user data:', result.data);
       const userSession: User = {
         id: result.data.id.toString(),
         email: result.data.email,
@@ -49,6 +52,8 @@ export const useAuthProvider = () => {
       localStorage.setItem('current_user', JSON.stringify(userSession));
       // Store the token for API requests
       localStorage.setItem('current_user_token', result.data.token);
+      localStorage.setItem('auth_token', result.data.token);
+      console.log('User session stored:', userSession);
     }
   };
 

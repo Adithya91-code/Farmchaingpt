@@ -36,6 +36,33 @@ const CropForm: React.FC<CropFormProps> = ({ crop, onClose, onSave }) => {
     setLoading(true);
     setError('');
 
+    // Validate required fields
+    if (!formData.name.trim()) {
+      setError('Crop name is required');
+      setLoading(false);
+      return;
+    }
+    if (!formData.crop_type) {
+      setError('Crop type is required');
+      setLoading(false);
+      return;
+    }
+    if (!formData.harvest_date) {
+      setError('Harvest date is required');
+      setLoading(false);
+      return;
+    }
+    if (!formData.expiry_date) {
+      setError('Expiry date is required');
+      setLoading(false);
+      return;
+    }
+    if (!formData.soil_type) {
+      setError('Soil type is required');
+      setLoading(false);
+      return;
+    }
+
     try {
       let finalImageUrl = formData.image_url;
       
@@ -49,12 +76,18 @@ const CropForm: React.FC<CropFormProps> = ({ crop, onClose, onSave }) => {
         });
       }
 
+      const cropDataToSave = { 
+        ...formData, 
+        image_url: finalImageUrl,
+        pesticides_used: formData.pesticides_used || '' // Ensure it's never null
+      };
+
       if (crop) {
         // Update existing crop
-        onSave(crop.id, { ...formData, image_url: finalImageUrl });
+        onSave(crop.id, cropDataToSave);
       } else {
         // Create new crop
-        onSave('', { ...formData, image_url: finalImageUrl });
+        onSave('', cropDataToSave);
       }
       onClose();
     } catch (err: any) {

@@ -215,6 +215,12 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     if (!user) return;
 
     console.log('Adding crop with data:', cropData);
+    
+    // Validate required fields before sending
+    if (!cropData.name || !cropData.crop_type || !cropData.harvest_date || !cropData.expiry_date || !cropData.soil_type) {
+      setError('Please fill in all required fields');
+      return;
+    }
 
     try {
       const result = await apiService.createCrop({
@@ -223,18 +229,17 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         harvestDate: cropData.harvest_date,
         expiryDate: cropData.expiry_date,
         soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
+        pesticidesUsed: cropData.pesticides_used || '',
         imageUrl: cropData.image_url
       });
 
       if (result.error) {
         console.error('Error creating crop:', result.error);
-        // Show a more user-friendly error message
-        setError('Failed to add crop. Please check your connection and try again.');
+        setError('Failed to add crop: ' + result.error);
       } else {
         console.log('Crop created successfully:', result.data);
-        // Reload crops to show the new one
-        loadCropsConverted(); // Reload crops from backend
+        loadCropsConverted();
+        setError(''); // Clear any previous errors
       }
     } catch (error) {
       console.error('Network error creating crop:', error);
@@ -326,10 +331,21 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg border border-orange-200 p-6">
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Crop Management</h1>
             <p className="text-gray-600">Manage your crops and track your harvest</p>
+            {user && (
+              <p className="text-sm text-gray-500 mt-1">
+                Logged in as: {user.name || user.email} ({user.role})
+                {user.farmer_id && ` - Farmer ID: ${user.farmer_id}`}
+              </p>
+            )}
           </div>
           <div className="flex space-x-3">
             <button

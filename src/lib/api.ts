@@ -81,26 +81,32 @@ class ApiService {
   // Crop APIs
   async getCrops(): Promise<ApiResponse<any[]>> {
     try {
+      console.log('Getting crops with headers:', this.getAuthHeaders());
       const response = await fetch(`${API_BASE_URL}/crops`, {
         headers: this.getAuthHeaders()
       });
 
       return await this.handleResponse(response);
     } catch (error) {
+      console.error('Network error in getCrops:', error);
       return { error: 'Network error occurred' };
     }
   }
 
   async createCrop(cropData: any): Promise<ApiResponse<any>> {
     try {
+      console.log('Creating crop with data:', cropData);
+      console.log('Using headers:', this.getAuthHeaders());
       const response = await fetch(`${API_BASE_URL}/crops`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(cropData)
       });
 
+      console.log('Create crop response status:', response.status);
       return await this.handleResponse(response);
     } catch (error) {
+      console.error('Network error in createCrop:', error);
       return { error: 'Network error occurred' };
     }
   }

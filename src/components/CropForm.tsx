@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, Calendar, Wheat, Beaker, ImageIcon } from 'lucide-react';
+import { X, Upload, Calendar, Wheat, Beaker, Image as ImageIcon } from 'lucide-react';
 import { Crop } from '../types';
 
 interface CropFormProps {

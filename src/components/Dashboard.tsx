@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Calendar, Wheat, Package, QrCode, ScanLine, Truck, Store, User, ShoppingCart, Brain } from 'lucide-react';
+import { Plus, Search, Filter, CreditCard as Edit, Trash2, Calendar, Wheat, Package, QrCode, ScanLine, Truck, Store, User, ShoppingCart, Brain } from 'lucide-react';
 import { Crop } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../lib/api';
@@ -324,31 +324,12 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
 
   return (
     <div className="space-y-6">
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
-          <button
-            onClick={() => setError('')}
-            className="absolute top-0 bottom-0 right-0 px-4 py-3"
-          >
-            <span className="sr-only">Dismiss</span>
-            ×
-          </button>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg border border-orange-200 p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Crop Management</h1>
-            <p className="text-gray-600">
-              {user?.role === 'farmer' ? 'Add and manage your crops' : 
-               user?.role === 'distributor' ? 'Manage crops from farmers' :
-               user?.role === 'retailer' ? 'Manage crops from distributors' :
-               'View and manage crops'}
-            </p>
+            <p className="text-gray-600">Manage your crops and track your harvest</p>
           </div>
           <div className="flex space-x-3">
             <button

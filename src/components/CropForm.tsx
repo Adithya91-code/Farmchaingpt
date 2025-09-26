@@ -82,8 +82,13 @@ const CropForm: React.FC<CropFormProps> = ({ crop, onClose, onSave }) => {
         pesticides_used: formData.pesticides_used || '' // Ensure it's never null
       };
 
-      // Always pass crop ID (empty string for new crops)
-      onSave(crop?.id || '', cropDataToSave);
+      if (crop) {
+        // Update existing crop
+        onSave(crop.id, cropDataToSave);
+      } else {
+        // Create new crop
+        onSave('', cropDataToSave);
+      }
       onClose();
     } catch (err: any) {
       setError(err.message || 'An error occurred while saving the crop');

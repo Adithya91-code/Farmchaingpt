@@ -173,21 +173,24 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
   };
 
   // Update loadCrops to convert format
-  const loadCropsConverted = async () => {
+  const loadCrops = async () => {
     if (!user) return;
 
     try {
       const result = await apiService.getCrops();
       if (result.error) {
         console.error('Error loading crops:', result.error);
+        setError('Failed to load crops: ' + result.error);
         setCrops([]);
       } else {
         console.log('Loaded crops from backend:', result.data);
         const convertedCrops = (result.data || []).map(convertCropFormat);
         setCrops(convertedCrops);
+        setError(''); // Clear any previous errors
       }
     } catch (error) {
       console.error('Network error loading crops:', error);
+      setError('Network error loading crops. Please check your connection.');
       setCrops([]);
     }
     setLoading(false);
@@ -195,10 +198,10 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
 
   // Use the converted version
   useEffect(() => {
-    loadCropsConverted();
+    loadCrops();
   }, [user]);
 
-  const handleAddCropConverted = async (cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
+  const handleAddCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
 
     console.log('Adding crop with data:', cropData);
@@ -210,6 +213,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     }
 
     try {
+      // Format data for backend
       const result = await apiService.createCrop({
         name: cropData.name,
         cropType: cropData.crop_type,
@@ -217,7 +221,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         expiryDate: cropData.expiry_date,
         soilType: cropData.soil_type,
         pesticidesUsed: cropData.pesticides_used || '',
-        imageUrl: cropData.image_url
+        imageUrl: cropData.image_url || ''
       });
 
       if (result.error) {
@@ -225,7 +229,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         setError('Failed to add crop: ' + result.error);
       } else {
         console.log('Crop created successfully:', result.data);
-        loadCropsConverted();
+        loadCrops();
         setError(''); // Clear any previous errors
       }
     } catch (error) {
@@ -234,7 +238,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     }
   };
 
-  const handleUpdateCropConverted = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
+  const handleUpdateCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
     console.log('Updating crop:', cropId, 'with data:', cropData);
     
     try {
@@ -253,7 +257,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         alert('Error updating crop: ' + result.error);
       } else {
         console.log('Crop updated successfully:', result.data);
-        loadCropsConverted(); // Reload crops from backend
+        loadCrops(); // Reload crops from backend
       }
     } catch (error) {
       console.error('Network error updating crop:', error);
@@ -261,7 +265,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     }
   };
 
-  const handleDeleteConverted = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this crop?')) return;
 
     try {
@@ -271,7 +275,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         alert('Error deleting crop: ' + result.error);
       } else {
         console.log('Crop deleted successfully');
-        loadCropsConverted(); // Reload crops from backend
+        loadCrops(); // Reload crops from backend
       }
     } catch (error) {
       console.error('Network error deleting crop:', error);
@@ -600,7 +604,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <CropForm
           crop={editingCrop}
           onClose={handleFormClose}
-          onSave={editingCrop ? handleUpdateCrop : handleAddCrop}
+          onSave={handleAddCrop}
         />
       )}
 
@@ -609,7 +613,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <SupplyChainForm
           crop={showSupplyChainForm}
           onClose={() => setShowSupplyChainForm(null)}
-          onSave={loadCropsFromStorage}
+          onSave={loadCrops}
         />
       )}
 
@@ -618,7 +622,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <FarmerCropSelector
           userRole={user?.role || 'farmer'}
           onClose={() => setShowFarmerCropSelector(false)}
-          onSave={loadCropsFromStorage}
+          onSave={loadCrops}
         />
       )}
 

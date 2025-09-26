@@ -37,8 +37,29 @@ public class CropController {
     @PostMapping
     public ResponseEntity<?> createCrop(@Valid @RequestBody Crop crop) {
         try {
+            // Log the received crop data
+            System.out.println("Received crop data: " + crop.getName() + ", " + crop.getCropType() + ", " + crop.getHarvestDate());
+            
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             User user = (User) auth.getPrincipal();
+            
+            // Validate required fields
+            if (crop.getName() == null || crop.getName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Crop name is required");
+            }
+            if (crop.getCropType() == null || crop.getCropType().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Crop type is required");
+            }
+            if (crop.getHarvestDate() == null) {
+                return ResponseEntity.badRequest().body("Harvest date is required");
+            }
+            if (crop.getExpiryDate() == null) {
+                return ResponseEntity.badRequest().body("Expiry date is required");
+            }
+            if (crop.getSoilType() == null || crop.getSoilType().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Soil type is required");
+            }
+            
             crop.setUser(user);
 
             // Set farmer info if user is a farmer
@@ -49,8 +70,11 @@ public class CropController {
             }
 
             Crop savedCrop = cropService.saveCrop(crop);
+            System.out.println("Crop saved successfully with ID: " + savedCrop.getId());
             return ResponseEntity.ok(savedCrop);
         } catch (Exception e) {
+            System.err.println("Error creating crop: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error creating crop: " + e.getMessage());
         }
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, CreditCard as Edit, Trash2, Calendar, Wheat, Package, QrCode, ScanLine, Truck, Store, User, ShoppingCart, Brain } from 'lucide-react';
 import { Crop } from '../types';
 import { useAuth } from '../hooks/useAuth';
-import { apiService } from '../lib/api';
+import { storage } from '../lib/storage';
 import CropForm from './CropForm';
 import SupplyChainForm from './SupplyChainForm';
 import FarmerCropSelector from './FarmerCropSelector';
@@ -28,54 +28,41 @@ const Dashboard: React.FC = () => {
 
 
   useEffect(() => {
-    loadCrops();
+    loadCropsFromStorage();
   }, [user]);
 
-  const loadCrops = async () => {
+  const loadCropsFromStorage = () => {
     if (!user) return;
 
-    try {
-      const result = await apiService.getCrops();
-      if (result.error) {
-        console.error('Error loading crops:', result.error);
-        setCrops([]);
-      } else {
-        console.log('Loaded crops from backend:', result.data);
-        setCrops(result.data || []);
-      }
-    } catch (error) {
-      console.error('Network error loading crops:', error);
-      setCrops([]);
-    }
+    console.log('Loading crops for user:', user.id);
+    const userCrops = storage.getCrops(user.id);
+    console.log('Loaded crops from storage:', userCrops);
+    setCrops(userCrops);
     setLoading(false);
   };
 
-
-  const handleAddCrop = async (cropData: any) => {
+  const handleAddCrop = (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
 
-    try {
-      const result = await apiService.createCrop({
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error creating crop:', result.error);
-        alert('Error creating crop: ' + result.error);
-      } else {
-        console.log('Crop created successfully:', result.data);
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error creating crop:', error);
-      alert('Network error creating crop. Please check your connection.');
+    console.log('Adding crop with data:', cropData);
+    
+    // Validate required fields
+    if (!cropData.name || !cropData.crop_type || !cropData.harvest_date || !cropData.expiry_date || !cropData.soil_type) {
+      setError('Please fill in all required fields');
+      return;
     }
+
+    const newCrop: Crop = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...cropData,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      farmer_info: user.role === 'farmer' ? {
+        farmer_id: user.farmer_id || '',
+        name: user.name || user.email,
+        location: user.location || 'Location not specified'
+      } : undefined
+    };
   };
 
   const handleUpdateCrop = async (cropId: string, cropData: any) => {
@@ -529,7 +516,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteConverted(crop.id)}
+                          onClick={() => handleDelete(crop.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -613,7 +600,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <CropForm
           crop={editingCrop}
           onClose={handleFormClose}
-          onSave={editingCrop ? handleUpdateCropConverted : handleAddCropConverted}
+          onSave={editingCrop ? handleUpdateCrop : handleAddCrop}
         />
       )}
 
@@ -622,7 +609,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <SupplyChainForm
           crop={showSupplyChainForm}
           onClose={() => setShowSupplyChainForm(null)}
-          onSave={loadCropsConverted}
+          onSave={loadCropsFromStorage}
         />
       )}
 
@@ -631,7 +618,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <FarmerCropSelector
           userRole={user?.role || 'farmer'}
           onClose={() => setShowFarmerCropSelector(false)}
-          onSave={loadCropsConverted}
+          onSave={loadCropsFromStorage}
         />
       )}
 

@@ -123,10 +123,10 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     loadCrops();
   }, [user]);
 
-  const handleAddCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
+  const handleSaveCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
 
-    console.log('Adding crop with data:', cropData);
+    console.log('Saving crop with data:', cropData);
     
     // Validate required fields before sending
     if (!cropData.name || !cropData.crop_type || !cropData.harvest_date || !cropData.expiry_date || !cropData.soil_type) {
@@ -135,55 +135,43 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     }
 
     try {
-      // Format data for backend
-      const result = await apiService.createCrop({
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used || '',
-        imageUrl: cropData.image_url || ''
-      });
+      let result;
+      
+      if (cropId && editingCrop) {
+        // Update existing crop
+        result = await apiService.updateCrop(cropId, {
+          name: cropData.name,
+          cropType: cropData.crop_type,
+          harvestDate: cropData.harvest_date,
+          expiryDate: cropData.expiry_date,
+          soilType: cropData.soil_type,
+          pesticidesUsed: cropData.pesticides_used || '',
+          imageUrl: cropData.image_url || ''
+        });
+      } else {
+        // Create new crop
+        result = await apiService.createCrop({
+          name: cropData.name,
+          cropType: cropData.crop_type,
+          harvestDate: cropData.harvest_date,
+          expiryDate: cropData.expiry_date,
+          soilType: cropData.soil_type,
+          pesticidesUsed: cropData.pesticides_used || '',
+          imageUrl: cropData.image_url || ''
+        });
+      }
 
       if (result.error) {
-        console.error('Error creating crop:', result.error);
-        setError('Failed to add crop: ' + result.error);
+        console.error('Error saving crop:', result.error);
+        setError('Failed to save crop: ' + result.error);
       } else {
-        console.log('Crop created successfully:', result.data);
+        console.log('Crop saved successfully:', result.data);
         loadCrops();
-        setError(''); // Clear any previous errors
+        setError('');
       }
     } catch (error) {
-      console.error('Network error creating crop:', error);
+      console.error('Network error saving crop:', error);
       setError('Network error. Please check your connection and try again.');
-    }
-  };
-
-  const handleUpdateCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
-    console.log('Updating crop:', cropId, 'with data:', cropData);
-    
-    try {
-      const result = await apiService.updateCrop(cropId, {
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error updating crop:', result.error);
-        alert('Error updating crop: ' + result.error);
-      } else {
-        console.log('Crop updated successfully:', result.data);
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error updating crop:', error);
-      alert('Network error updating crop. Please check your connection.');
     }
   };
 
@@ -526,7 +514,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <CropForm
           crop={editingCrop}
           onClose={handleFormClose}
-          onSave={handleAddCrop}
+          onSave={handleSaveCrop}
         />
       )}
 

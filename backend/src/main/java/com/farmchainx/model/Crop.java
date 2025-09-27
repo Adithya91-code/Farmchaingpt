@@ -16,25 +16,26 @@ public class Crop {
     private Long id;
 
     @NotBlank
+    @Column(nullable = false)
     @Size(max = 100)
     private String name;
 
     @NotBlank
+    @Column(nullable = false)
     @Size(max = 50)
-    @Column(name = "crop_type")
     private String cropType;
 
     @NotNull
-    @Column(name = "harvest_date")
+    @Column(nullable = false)
     private LocalDate harvestDate;
 
     @NotNull
-    @Column(name = "expiry_date")
+    @Column(nullable = false)
     private LocalDate expiryDate;
 
     @NotBlank
+    @Column(nullable = false)
     @Size(max = 50)
-    @Column(name = "soil_type")
     private String soilType;
 
     @Size(max = 500)

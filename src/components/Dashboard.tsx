@@ -28,86 +28,8 @@ const Dashboard: React.FC = () => {
 
 
   useEffect(() => {
-    loadCropsFromStorage();
+    loadCrops();
   }, [user]);
-
-  const loadCropsFromStorage = () => {
-    if (!user) return;
-
-    console.log('Loading crops for user:', user.id);
-    const userCrops = storage.getCrops(user.id);
-    console.log('Loaded crops from storage:', userCrops);
-    setCrops(userCrops);
-    setLoading(false);
-  };
-
-  const handleAddCrop = (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
-    if (!user) return;
-
-    console.log('Adding crop with data:', cropData);
-    
-    // Validate required fields
-    if (!cropData.name || !cropData.crop_type || !cropData.harvest_date || !cropData.expiry_date || !cropData.soil_type) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    const newCrop: Crop = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...cropData,
-      user_id: user.id,
-      created_at: new Date().toISOString(),
-      farmer_info: user.role === 'farmer' ? {
-        farmer_id: user.farmer_id || '',
-        name: user.name || user.email,
-        location: user.location || 'Location not specified'
-      } : undefined
-    };
-  };
-
-  const handleUpdateCrop = async (cropId: string, cropData: any) => {
-    try {
-      const result = await apiService.updateCrop(cropId, {
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error updating crop:', result.error);
-        alert('Error updating crop: ' + result.error);
-      } else {
-        console.log('Crop updated successfully:', result.data);
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error updating crop:', error);
-      alert('Network error updating crop. Please check your connection.');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this crop?')) return;
-
-    try {
-      const result = await apiService.deleteCrop(id);
-      
-      if (result.error) {
-        console.error('Error deleting crop:', result.error);
-        alert('Error deleting crop: ' + result.error);
-      } else {
-        console.log('Crop deleted successfully');
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error deleting crop:', error);
-      alert('Network error deleting crop. Please check your connection.');
-    }
-  };
 
   const handleScanResult = async (cropId: string) => {
     // Navigate to the scan page

@@ -95,40 +95,16 @@ class ApiService {
 
   async createCrop(cropData: any): Promise<ApiResponse<any>> {
     try {
-      // Ensure all required fields are present and properly formatted
-      const formattedCropData = {
-        name: cropData.name || '',
-        cropType: cropData.cropType || cropData.crop_type || '',
-        harvestDate: cropData.harvestDate || cropData.harvest_date || '',
-        expiryDate: cropData.expiryDate || cropData.expiry_date || '',
-        soilType: cropData.soilType || cropData.soil_type || '',
-        pesticidesUsed: cropData.pesticidesUsed || cropData.pesticides_used || '',
-        imageUrl: cropData.imageUrl || cropData.image_url || ''
-      };
-
-      console.log('Creating crop with formatted data:', formattedCropData);
+      console.log('Creating crop with data:', cropData);
       console.log('Using headers:', this.getAuthHeaders());
-      
       const response = await fetch(`${API_BASE_URL}/crops`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(formattedCropData)
+        body: JSON.stringify(cropData)
       });
 
       console.log('Create crop response status:', response.status);
-      const responseText = await response.text();
-      console.log('Create crop response:', responseText);
-      
-      if (!response.ok) {
-        return { error: responseText || `HTTP error! status: ${response.status}` };
-      }
-      
-      try {
-        const data = JSON.parse(responseText);
-        return { data };
-      } catch (e) {
-        return { data: responseText };
-      }
+      return await this.handleResponse(response);
     } catch (error) {
       console.error('Network error in createCrop:', error);
       return { error: 'Network error occurred' };

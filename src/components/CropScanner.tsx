@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Wheat, Calendar, User, Truck, Store, MapPin, ArrowLeft, AlertCircle } from 'lucide-react';
-import { storage } from '../lib/storage';
+import { apiService } from '../lib/api';
 import { Crop } from '../types';
 
 const CropScanner: React.FC = () => {
@@ -13,11 +13,51 @@ const CropScanner: React.FC = () => {
   useEffect(() => {
     const loadCrop = async () => {
       if (cropId) {
-        const foundCrop = storage.findCrop(cropId);
-        if (foundCrop) {
-          setCrop(foundCrop);
-        } else {
-          setError('Crop not found. This QR code may be invalid or from a different system.');
+        try {
+          const result = await apiService.getCropForScanning(cropId);
+          if (result.error) {
+            setError('Crop not found. This QR code may be invalid or from a different system.');
+          } else if (result.data) {
+            // Convert backend format to frontend format
+            const backendCrop = result.data;
+            const convertedCrop: Crop = {
+              id: backendCrop.id?.toString() || '',
+              name: backendCrop.name || '',
+              crop_type: backendCrop.cropType || '',
+              harvest_date: backendCrop.harvestDate || '',
+              expiry_date: backendCrop.expiryDate || '',
+              soil_type: backendCrop.soilType || '',
+              pesticides_used: backendCrop.pesticidesUsed || '',
+              image_url: backendCrop.imageUrl || '',
+              user_id: backendCrop.user?.id?.toString() || '',
+              created_at: backendCrop.createdAt || '',
+              farmer_info: backendCrop.farmerId ? {
+                farmer_id: backendCrop.farmerId,
+                name: backendCrop.farmerName || 'Unknown',
+                location: backendCrop.farmerLocation || 'Unknown'
+              } : undefined,
+              distributor_info: backendCrop.distributorId ? {
+                name: backendCrop.distributorName || 'Unknown',
+                location: backendCrop.distributorLocation || 'Unknown',
+                received_date: backendCrop.distributorReceivedDate || '',
+                sent_to_retailer: backendCrop.sentToRetailer || '',
+                retailer_location: backendCrop.retailerLocation || ''
+              } : undefined,
+              retailer_info: backendCrop.retailerName ? {
+                name: backendCrop.retailerName,
+                location: backendCrop.retailerLocation || 'Unknown',
+                received_date: backendCrop.retailerReceivedDate || '',
+                received_from_distributor: backendCrop.receivedFromDistributor || '',
+                distributor_location: backendCrop.distributorLocationRetailer || ''
+              } : undefined
+            };
+            setCrop(convertedCrop);
+          } else {
+            setError('Crop not found. This QR code may be invalid or from a different system.');
+          }
+        } catch (error) {
+          console.error('Network error loading crop:', error);
+          setError('Network error occurred while loading crop information.');
         }
       }
       setLoading(false);

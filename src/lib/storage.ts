@@ -103,6 +103,15 @@ class JSONStorage {
 
   // Current user methods
   getCurrentUser() {
+    // Also check localStorage for current user from backend auth
+    const backendUser = localStorage.getItem('current_user');
+    if (backendUser) {
+      try {
+        return JSON.parse(backendUser);
+      } catch (error) {
+        console.error('Error parsing backend user:', error);
+      }
+    }
     return this.data.currentUser;
   }
 

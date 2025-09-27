@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, CreditCard as Edit, Trash2, Calendar, Wheat, Package, QrCode, ScanLine, Truck, Store, User, ShoppingCart, Brain } from 'lucide-react';
 import { Crop } from '../types';
 import { useAuth } from '../hooks/useAuth';
-import { apiService } from '../lib/api';
+import { storage } from '../lib/storage';
 import CropForm from './CropForm';
 import SupplyChainForm from './SupplyChainForm';
 import FarmerCropSelector from './FarmerCropSelector';
@@ -30,97 +30,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadCrops();
   }, [user]);
-
-  const loadCrops = async () => {
-    if (!user) return;
-
-    try {
-      const result = await apiService.getCrops();
-      if (result.error) {
-        console.error('Error loading crops:', result.error);
-        setCrops([]);
-      } else {
-        console.log('Loaded crops from backend:', result.data);
-        setCrops(result.data || []);
-      }
-    } catch (error) {
-      console.error('Network error loading crops:', error);
-      setCrops([]);
-    }
-    setLoading(false);
-  };
-
-
-  const handleAddCrop = async (cropData: any) => {
-    if (!user) return;
-
-    try {
-      const result = await apiService.createCrop({
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error creating crop:', result.error);
-        alert('Error creating crop: ' + result.error);
-      } else {
-        console.log('Crop created successfully:', result.data);
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error creating crop:', error);
-      alert('Network error creating crop. Please check your connection.');
-    }
-  };
-
-  const handleUpdateCrop = async (cropId: string, cropData: any) => {
-    try {
-      const result = await apiService.updateCrop(cropId, {
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error updating crop:', result.error);
-        alert('Error updating crop: ' + result.error);
-      } else {
-        console.log('Crop updated successfully:', result.data);
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error updating crop:', error);
-      alert('Network error updating crop. Please check your connection.');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this crop?')) return;
-
-    try {
-      const result = await apiService.deleteCrop(id);
-      
-      if (result.error) {
-        console.error('Error deleting crop:', result.error);
-        alert('Error deleting crop: ' + result.error);
-      } else {
-        console.log('Crop deleted successfully');
-        loadCrops(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error deleting crop:', error);
-      alert('Network error deleting crop. Please check your connection.');
-    }
-  };
 
   const handleScanResult = async (cropId: string) => {
     // Navigate to the scan page
@@ -186,21 +95,24 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
   };
 
   // Update loadCrops to convert format
-  const loadCropsConverted = async () => {
+  const loadCrops = async () => {
     if (!user) return;
 
     try {
       const result = await apiService.getCrops();
       if (result.error) {
         console.error('Error loading crops:', result.error);
+        setError('Failed to load crops: ' + result.error);
         setCrops([]);
       } else {
         console.log('Loaded crops from backend:', result.data);
         const convertedCrops = (result.data || []).map(convertCropFormat);
         setCrops(convertedCrops);
+        setError(''); // Clear any previous errors
       }
     } catch (error) {
       console.error('Network error loading crops:', error);
+      setError('Network error loading crops. Please check your connection.');
       setCrops([]);
     }
     setLoading(false);
@@ -208,13 +120,13 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
 
   // Use the converted version
   useEffect(() => {
-    loadCropsConverted();
+    loadCrops();
   }, [user]);
 
-  const handleAddCropConverted = async (cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
+  const handleSaveCrop = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
 
-    console.log('Adding crop with data:', cropData);
+    console.log('Saving crop with data:', cropData);
     
     // Validate required fields before sending
     if (!cropData.name || !cropData.crop_type || !cropData.harvest_date || !cropData.expiry_date || !cropData.soil_type) {
@@ -223,58 +135,47 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
     }
 
     try {
-      const result = await apiService.createCrop({
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used || '',
-        imageUrl: cropData.image_url
-      });
+      let result;
+      
+      if (cropId && editingCrop) {
+        // Update existing crop
+        result = await apiService.updateCrop(cropId, {
+          name: cropData.name,
+          cropType: cropData.crop_type,
+          harvestDate: cropData.harvest_date,
+          expiryDate: cropData.expiry_date,
+          soilType: cropData.soil_type,
+          pesticidesUsed: cropData.pesticides_used || '',
+          imageUrl: cropData.image_url || ''
+        });
+      } else {
+        // Create new crop
+        result = await apiService.createCrop({
+          name: cropData.name,
+          cropType: cropData.crop_type,
+          harvestDate: cropData.harvest_date,
+          expiryDate: cropData.expiry_date,
+          soilType: cropData.soil_type,
+          pesticidesUsed: cropData.pesticides_used || '',
+          imageUrl: cropData.image_url || ''
+        });
+      }
 
       if (result.error) {
-        console.error('Error creating crop:', result.error);
-        setError('Failed to add crop: ' + result.error);
+        console.error('Error saving crop:', result.error);
+        setError('Failed to save crop: ' + result.error);
       } else {
-        console.log('Crop created successfully:', result.data);
-        loadCropsConverted();
-        setError(''); // Clear any previous errors
+        console.log('Crop saved successfully:', result.data);
+        loadCrops();
+        setError('');
       }
     } catch (error) {
-      console.error('Network error creating crop:', error);
+      console.error('Network error saving crop:', error);
       setError('Network error. Please check your connection and try again.');
     }
   };
 
-  const handleUpdateCropConverted = async (cropId: string, cropData: Omit<Crop, 'id' | 'user_id' | 'created_at'>) => {
-    console.log('Updating crop:', cropId, 'with data:', cropData);
-    
-    try {
-      const result = await apiService.updateCrop(cropId, {
-        name: cropData.name,
-        cropType: cropData.crop_type,
-        harvestDate: cropData.harvest_date,
-        expiryDate: cropData.expiry_date,
-        soilType: cropData.soil_type,
-        pesticidesUsed: cropData.pesticides_used,
-        imageUrl: cropData.image_url
-      });
-
-      if (result.error) {
-        console.error('Error updating crop:', result.error);
-        alert('Error updating crop: ' + result.error);
-      } else {
-        console.log('Crop updated successfully:', result.data);
-        loadCropsConverted(); // Reload crops from backend
-      }
-    } catch (error) {
-      console.error('Network error updating crop:', error);
-      alert('Network error updating crop. Please check your connection.');
-    }
-  };
-
-  const handleDeleteConverted = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this crop?')) return;
 
     try {
@@ -284,7 +185,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         alert('Error deleting crop: ' + result.error);
       } else {
         console.log('Crop deleted successfully');
-        loadCropsConverted(); // Reload crops from backend
+        loadCrops(); // Reload crops from backend
       }
     } catch (error) {
       console.error('Network error deleting crop:', error);
@@ -529,7 +430,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteConverted(crop.id)}
+                          onClick={() => handleDelete(crop.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -613,7 +514,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <CropForm
           crop={editingCrop}
           onClose={handleFormClose}
-          onSave={editingCrop ? handleUpdateCropConverted : handleAddCropConverted}
+          onSave={handleSaveCrop}
         />
       )}
 
@@ -622,7 +523,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <SupplyChainForm
           crop={showSupplyChainForm}
           onClose={() => setShowSupplyChainForm(null)}
-          onSave={loadCropsConverted}
+          onSave={loadCrops}
         />
       )}
 
@@ -631,7 +532,7 @@ Pesticides: ${crop.pesticidesUsed || 'None'}`;
         <FarmerCropSelector
           userRole={user?.role || 'farmer'}
           onClose={() => setShowFarmerCropSelector(false)}
-          onSave={loadCropsConverted}
+          onSave={loadCrops}
         />
       )}
 
